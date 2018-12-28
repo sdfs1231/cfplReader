@@ -14,6 +14,7 @@ def base64ToString(b):
 config.logger.info('Start')
 while True:
     timestramp = timer()
+    today=timer()[2]
     #print(timestramp[0],timestramp[1])
     try:
         response = urllib.request.urlopen(config.basicurl+'?method=getFlightInfo&latestDepDtFrom=%s&latestDepDtTo=%s' % (timestramp[0], timestramp[1]), timeout=30)
@@ -63,8 +64,7 @@ while True:
             if DB.queryoData(tempofpl) == 0:
                 tempofplfilename=timestramp[2]+'-'+i['fltNr']+'-'+i['latestDepArpCd']
                 tempo = base64ToString(tempofpl['ofpText'])
-                with open(tempofplfilename,'w') as f:
-                    f.write(tempo)
+                config.cfplfile(tempofplfilename,tempo)
                 # TODO add write to file with config
                 try:
                     detail = ofptextprocess(tempo)

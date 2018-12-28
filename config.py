@@ -6,7 +6,7 @@ logger.setLevel(level=logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(lineno)d - %(message)s')
 
 # FileHandler
-file_handler = logging.FileHandler('result.log')
+file_handler = logging.FileHandler('/OFP/Log/result.log')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 

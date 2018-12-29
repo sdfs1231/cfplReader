@@ -1,0 +1,7 @@
+__pycache__/*
+venv/*
+_oldversion/*
+_testfile/*
+.idea/*
+LOG/*
+.DS_Store

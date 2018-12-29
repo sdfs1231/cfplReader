@@ -97,17 +97,13 @@ def ofptextprocess(data,logger=None):
     detail.append(FL)
     if FL=='':
         logger.warning('routedefinition is empty!')
+    #TODO
     detail.append(RouteDef)
     detail.append(Rmk)
     detail.append(Max_turb)
-    for i in range(len(turbPoint)):
-        turbPoints=turbPoints+turbPoint[i]+','
-    detail.append(turbPoints)
+    detail.append(",".join(turbPoint))
     detail.append(Min_temp)
-    for j in range (len(tempPoint)):
-        tempPoints=tempPoints+tempPoint[j]+','
-    detail.append(tempPoints)
+    detail.append(",".join(tempPoint))
     detail.append(MEL)
-    for i in range(altnnum-1):
-        detail.append(ALTN[i+1])
+    detail += ALTN
     return detail

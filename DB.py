@@ -2,37 +2,15 @@ import mysql.connector
 import config
 
 #DB insert function
-def insertData(dict,detail,logger=None):
+def insertData(dict,logger=None):
     while True:
         try:
             cnx = mysql.connector.connect(user=config.dbuser, password=config.dbpass, database=config.dbname)
         except mysql.connector.Error as err:
-            logger.warning('connecting DB failed!')
+            logger.warning('connecting DB failed!',exc_info=True)
             continue
         break
     cursor = cnx.cursor()
-    dict['FL'] = detail[0]
-    dict['routeDef'] = detail[1]
-    dict['Rmk'] = detail[2]
-    dict['Max_turb'] = detail[3]
-    dict['turbPoint'] = detail[4]
-    dict['Min_temp'] = detail[5]
-    dict['tempPoint'] = detail[6]
-    dict['mel'] = detail[7]
-    if 8<len(detail):
-        dict['altn1'] = detail[8]
-    else:
-        dict['altn1'] = ''
-    if 9 < len(detail):
-        dict['altn2'] = detail[9]
-    else:
-        dict['altn2'] = ''
-    if 10 < len(detail):
-        dict['altn3'] = detail[10]
-    else:
-        dict['altn3'] = ''
-    del (dict['ofpText'])
-    del (dict['rlsText'])
     # 插入数据
     for key in dict:
         if dict[key] == {}:
@@ -43,16 +21,14 @@ def insertData(dict,detail,logger=None):
     try:
         cursor.execute(sql, dict)
     except Exception:
-        logger.warning('%s something goes wrong!'%dict['ofpNr'])
+        logger.warning('DB INSERT error : %s'%dict['ofpNr'],exc_info=True)
         logger.warning('d:%s'%dict)
-        logger.warning('detail:%s' % detail)
         logger.warning("SQL statement : "+sql)
-        logger.warning('insert error!',exc_info=True)
         return 0
     cnx.commit()
     cursor.close()
     cnx.close()
-    config.logger.info('成功插入：航班号%s！'%dict['ofpNr'])
+    config.logger.info('Insert Succeed：%s！'%dict['ofpNr'])
 
 #DB query function
 def queryoData(opfNr,logger=None):
@@ -60,7 +36,7 @@ def queryoData(opfNr,logger=None):
         try:
             cnx = mysql.connector.connect(user=config.dbuser, password=config.dbpass, database=config.dbname)
         except mysql.connector.Error :
-            logger.warning('connecting DB failed!')
+            logger.warning('connecting DB failed!', exc_info=True)
             continue
         break
     cursor = cnx.cursor()
@@ -68,10 +44,9 @@ def queryoData(opfNr,logger=None):
     try:
         cursor.execute(query)
     except Exception:
-        logger.info('query error!%s'%opfNr)
+        logger.info('query error:%s'%opfNr,exc_info=True)
         logger.warining("sql statement : "+ query)
-        logger.warning('query ',exc_info=True)
         cursor.close()
         cnx.close()
-        return 1
+        return -1
     return cursor.fetchone()[0]

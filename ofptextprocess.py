@@ -1,10 +1,10 @@
 import re
 
 # 正则表达式
-reRoute = r'\b(ROUTE NO\.\s\w{6}\d{2}..).+\b'
+reRoute = r'\b(ROUTE NO\.\s[0-9A-Z]+) +.+\b'
 rePoint = r'\b\d{3} +\d{3}\/\d{4} (\w+) +.*\b'
 reFL = r'\b(FL\s\d).+\b'
-reTurbTemp = r'\bM(\d{2})\.+.* (\d{2}) .*\b'
+reTurbTemp = r'\bM(\d{2})\.+.* {7}(\d{2})? .*\b'
 reAltn = r'\b(\w{4})\/\w{3}\/.*\b'
 endFpl=r'----------------------\s{3}END OF FLIGHT PLAN\s{3}----------------------[\s\S]+$'
 rmkEnd='                         ALTERNATE SUMMARY'
@@ -17,6 +17,7 @@ def ofptextprocess(data,logger=None):
     ALTN = []
     Min_temp = 0
     Max_turb = 0
+    point=''
     tempPoint =[]
     tempPoints=''
     turbPoint = []
@@ -30,7 +31,6 @@ def ofptextprocess(data,logger=None):
     Rmksign = 0
     MELsign = 0
     RouteDefSign = 0
-    altnnum = 0
     lines = re.sub(endFpl, '', data)
     lines = data.split('\n')
     for line in lines:
@@ -60,27 +60,36 @@ def ofptextprocess(data,logger=None):
         if re.match(reAltn, line):
             tempo = re.match(reAltn, line)
             ALTN.append(tempo.group(1))
-            altnnum+=1
 
         # 航路点和颠簸
         if re.match(rePoint, line):
             tempo = re.match(rePoint, line)
             point = tempo.group(1)
+            ##print(point)
             continue
         if re.match(reTurbTemp, line):
             tempo = re.match(reTurbTemp, line)
-            temp = tempo.group(1)
             turb = tempo.group(2)
+            #print(tempo.group(2))
+            if tempo.group(2)==None:
+                turb=0
+            temp = tempo.group(1)
             if int(temp) > Min_temp:
                 Min_temp = int(temp)
                 tempPoint.clear()
-            if int(temp) == Min_temp:
                 tempPoint.append(point)
+            else:
+                if int(temp) == Min_temp:
+                    tempPoint.append(point)
+
             if int(turb) > Max_turb:
                 Max_turb = int(turb)
                 turbPoint.clear()
-            if int(turb) == Max_turb:
                 turbPoint.append(point)
+            else:
+                if int(turb) == Max_turb:
+                    turbPoint.append(point)
+
         # MEL
         if MELsign != 0:
             MEL += line
@@ -92,18 +101,35 @@ def ofptextprocess(data,logger=None):
     else:
         Max_turb=str(Max_turb)
     Min_temp='M'+str(Min_temp)
+
+    detail = {}
     if FL=='':
-        logger.warning('FL is empty!')
-    detail.append(FL)
-    if FL=='':
-        logger.warning('routedefinition is empty!')
-    #TODO
-    detail.append(RouteDef)
-    detail.append(Rmk)
-    detail.append(Max_turb)
-    detail.append(",".join(turbPoint))
-    detail.append(Min_temp)
-    detail.append(",".join(tempPoint))
-    detail.append(MEL)
-    detail += ALTN
+        logger.warning('ofpProcess Warning : FL empty!')
+    detail['FL']=FL
+    if RouteDef=='':
+        logger.warning('ofpProcess Warning : routedefinition empty!')
+    detail['routeDef']=RouteDef
+    detail['Rmk'] =Rmk
+    detail['Max_turb'] = Max_turb
+    #颠簸点
+    if turbPoint==[]:
+        detail['turbPoint']=''
+        logger.warning('ofpProcess Warning : turbpoints empty')
+    else:
+        detail['turbPoint'] = ",".join(turbPoint)
+    detail['Min_temp']=Min_temp
+    if tempPoint==[]:
+        logger.warning('ofpProcess Warning : temppoints empty!')
+        detail['tempPoint']=''
+    else:
+        detail['tempPoint'] = ",".join(tempPoint)
+    detail['MEL']=MEL
+    detail['altn0']=""
+    detail['altn1']=""
+    detail['altn2']=""
+    detail['altn3']=""
+    i=0
+    for altn in ALTN :
+        detail['altn'+str(i)] = altn
+        i+=1
     return detail

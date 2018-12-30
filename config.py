@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime
-
+from logging.handlers import TimedRotatingFileHandler
 #from timer import timer
 todaydire=datetime.now().__format__("%Y%m%d%H%M")
 basicurl = 'http://10.254.137.222/fdbs.beta/ajax.cod.php'
@@ -12,8 +12,10 @@ dbname = 'szxsoc'
 cfpltable = 'cfpl'
 CFPLdire='/../wamp64/www/fdbs.beta/OFP/'
 loggerpath='Log/'
-loggername = datetime.now().__format__("%Y%m%d")+'.log'
 #logger
+interval = 300
+timeDeltaBefore = 2
+timeDeltaAfter = 6
 logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.DEBUG)
 
@@ -21,10 +23,12 @@ logger.setLevel(level=logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(lineno)d - %(message)s')
 
 # FileHandler
-file_handler = logging.FileHandler(loggerpath+loggername)#path+name
+file_handler = logging.FileHandler(loggerpath+datetime.now().__format__("%Y%m%d")+'.log')#path+name
 file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-
+rotatehandler= TimedRotatingFileHandler(loggerpath+datetime.now().__format__("%Y%m%d")+'.log', when="midnight", interval=1)
+rotatehandler.setFormatter(formatter)
+#logger.addHandler(file_handler)
+logger.addHandler(rotatehandler)
 # StreamHandler
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)

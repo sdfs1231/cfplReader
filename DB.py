@@ -7,7 +7,7 @@ def insertData(dict,logger=None):
         try:
             cnx = mysql.connector.connect(user=config.dbuser, password=config.dbpass, database=config.dbname)
         except mysql.connector.Error as err:
-            logger.warning('connecting DB failed!',exc_info=True)
+            logger.warning('connecting DB failed!', exc_info=True)
             continue
         break
     cursor = cnx.cursor()
@@ -44,8 +44,8 @@ def queryoData(opfNr,logger=None):
     try:
         cursor.execute(query)
     except Exception:
-        logger.info('query error:%s'%opfNr,exc_info=True)
-        logger.warining("sql statement : "+ query)
+        logger.warining('query error:%s' % opfNr, exc_info=True)
+        logger.warining("sql statement : %s " % query )
         cursor.close()
         cnx.close()
         return -1

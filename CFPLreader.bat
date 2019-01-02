@@ -1,1 +1,1 @@
-python cfplreader.py
+python cfplreader.async.py

@@ -30,38 +30,38 @@ networkretry_max = 100
 aio_max_connection = 100
 aio_timeout = 30
 
-
-
-
-todaydire=datetime.now().__format__("%Y%m%d%H%M")
-
-
-
-loggerpath='Log/'
 #logger
+loggerpath='Log/cfplreader'
 
-logger = logging.getLogger(__name__)
-logger.setLevel(level=logging.DEBUG)
+#formatter
+formatter = logging.Formatter('%(asctime)s - %(module)s - %(levelname)s - %(lineno)d - %(message)s')
 
-# Formatter
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(lineno)d - %(message)s')
-
-# FileHandler
-file_handler = logging.FileHandler(loggerpath+datetime.now().__format__("%Y%m%d")+'.log')#path+name
-file_handler.setFormatter(formatter)
-rotatehandler= TimedRotatingFileHandler(loggerpath+datetime.now().__format__("%Y-%m-%d")+'.log', when="midnight", interval=1)
-rotatehandler.suffix="%Y-%m-%d"
+#full log split by day
+rotatehandler = TimedRotatingFileHandler(loggerpath + '.log',
+                                         when="midnight", interval=1)
+rotatehandler.suffix = "%Y-%m-%d"
 rotatehandler.setFormatter(formatter)
-#logger.addHandler(file_handler)
-logger.addHandler(rotatehandler)
+rotatehandler.setLevel(logging.DEBUG)
+
+#warning+ log
+debugHandler = logging.FileHandler(loggerpath+'_debug.log')
+debugHandler.setFormatter(formatter)
+debugHandler.setLevel(logging.WARNING)
+
 # StreamHandler
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)
+stream_handler.setLevel(logging.DEBUG)
+
+#logger
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 logger.addHandler(stream_handler)
+logger.addHandler(rotatehandler)
+logger.addHandler(debugHandler)
 
 def saveOpf2File(CFPLname,data,date):
     CFPLpath=CFPLdir+date+'/'
     os.makedirs(os.path.dirname(CFPLpath + CFPLname + ".txt"), exist_ok=True)
     with open(CFPLpath + CFPLname+".txt", 'a') as f:
         f.write(data)
-

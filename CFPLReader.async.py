@@ -93,7 +93,7 @@ def processofp(ofp,params):
             try:
                 detail = ofptextprocess(cfplDecode, config.logger)
             except Exception:
-                config.logger.debug('ofpprocess error!ofpNr=%s,fltNr=%s,depCd=%s,arvCd=%s' % (
+                config.logger.warning('ofpprocess error!ofpNr=%s,fltNr=%s,depCd=%s,arvCd=%s' % (
                     ofp['opfNr'], ofp['fltNr'], ofp['depCd'], ofp['arvCd']), exc_info=True)
                 return -1
             DB.insertData({**ofp, **detail}, config.logger)
@@ -106,12 +106,6 @@ def processofp(ofp,params):
 
 
 config.logger.info('CFPL Reader Program Start')
-flightlistCount = 0
-airborneCount = 0
-queryofpCount = 0
-nocfplCount = 0
-cfplexistCount = 0
-insertCount = 0
 loop = asyncio.get_event_loop()
 session = loop.run_until_complete(session_initial())
 while True:
@@ -119,6 +113,11 @@ while True:
     flightlist = loop.run_until_complete(getflightlist(session, config.basicurl))
     flightinfo = flightlist['FlightInfo']
     flightlistCount = len(flightinfo)
+    airborneCount = 0
+    queryofpCount = 0
+    nocfplCount = 0
+    cfplexistCount = 0
+    insertCount = 0
     cfpltasks = []
     for index, i in enumerate(flightinfo, start=0):
         #config.logger.info('processing : %s/%s' % (str(index + 1), flightlistCount))

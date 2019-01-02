@@ -26,7 +26,7 @@ while True:
                 config.basicurl + '?method=getFlightInfo&latestDepDtFrom=%s&latestDepDtTo=%s' % (
                 startTime.__format__(dateTimefomartter), endTime.__format__(dateTimefomartter)), timeout=30)
         except Exception:
-            config.logger.debug('get FlightList network warning,retry NO%s'%str(Fltlistretry+1))
+            config.logger.warning('get FlightList network warning,retry NO%s'%str(Fltlistretry+1))
             time.sleep(10)
             continue
         break

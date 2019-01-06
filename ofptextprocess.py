@@ -49,7 +49,6 @@ def ofptextprocess(data, logger=None):
             # tempo = re.match(reRoute, line)
             # ROUTE = tempo.group(1)
             routeDef_start_flag = 1
-            print(line)
         # RMK
         if line == rmkEnd:
             Rmksign = 0

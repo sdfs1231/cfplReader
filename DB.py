@@ -52,7 +52,7 @@ def insertData(ofpDict, logger=None):
 
 
 # DB query function
-def queryoData(opfNr, logger=None):
+def queryoData(ofpNr, logger=None):
     while True:
         try:
             cnx = mysql.connector.connect(user=config.dbuser, password=config.dbpass, database=config.dbname)
@@ -61,12 +61,12 @@ def queryoData(opfNr, logger=None):
             continue
         break
     cursor = cnx.cursor()
-    query = "SELECT count(*) FROM " + config.dbname + "." + config.cfpltable + " where ofpNr = '" + opfNr + "'"
+    query = "SELECT count(*) FROM " + config.dbname + "." + config.cfpltable + " where ofpNr = '" + ofpNr + "'"
     try:
         cursor.execute(query)
     except Exception:
-        logger.warining('query error:%s' % opfNr, exc_info=True)
-        logger.warining("sql statement : %s " % query)
+        logger.warning('query error:%s' % ofpNr, exc_info=True)
+        logger.warning("sql statement : %s " % query)
         cursor.close()
         cnx.close()
         return -1

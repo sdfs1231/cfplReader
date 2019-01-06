@@ -5,7 +5,7 @@ reRoute = r'\b(ROUTE NO\.\s[0-9A-Z]+) +.+\b'
 rePoint = r'\b\d{3} +\d{3}\/\d{4} (\w+) +.*\b'
 reFL = r'\b(FL\s\d).+\b'
 reFLend = r'.+ALL WEIGHTS IN KILOS'
-reTurbTemp = r'\bM(\d{2})\.+.* {7}(\d{2})? .*\b'
+reTurbTemp = r'\b([MP])(\d{2})\.+.* {7}(\d{2})? .*\b'
 reAltn = r'\b(\w{4})\/\w{3}\/.*\b'
 endFpl = r'----------------------\s{3}END OF FLIGHT PLAN\s{3}----------------------[\s\S]+$'
 rmkEnd = '                         ALTERNATE SUMMARY'
@@ -15,7 +15,8 @@ melBgnSign = '-------------      -----------'
 
 def ofptextprocess(data, logger=None):
     ALTN = []
-    Min_temp = 0
+    Min_temp = 999
+    Min_temp_sign = ''
     Max_turb = 0
     point = ''
     tempPoint = []
@@ -70,24 +71,29 @@ def ofptextprocess(data, logger=None):
             continue
         if re.match(reTurbTemp, line):
             tempo = re.match(reTurbTemp, line)
-            turb = tempo.group(2)
-            if tempo.group(2) is None:
+            if tempo.group(3) is None:
                 turb = 0
-            temp = tempo.group(1)
-            if int(temp) > Min_temp:
-                Min_temp = int(temp)
+            else:
+                turb = int(tempo.group(3))
+            tempSign = tempo.group(1)
+            temp = int(tempo.group(2))
+            if tempSign == "M":
+                temp = -temp
+            if temp < Min_temp:
+                Min_temp = temp
+                Min_temp_sign = tempSign
                 tempPoint.clear()
                 tempPoint.append(point)
             else:
-                if int(temp) == Min_temp:
+                if temp == Min_temp:
                     tempPoint.append(point)
 
-            if int(turb) > Max_turb:
-                Max_turb = int(turb)
+            if turb > Max_turb:
+                Max_turb = turb
                 turbPoint.clear()
                 turbPoint.append(point)
             else:
-                if int(turb) == Max_turb:
+                if turb == Max_turb:
                     turbPoint.append(point)
 
         # MEL
@@ -96,11 +102,8 @@ def ofptextprocess(data, logger=None):
         if line == melBgnSign:
             MELsign = 1
 
-    if Max_turb < 10:
-        Max_turb = '0'+str(Max_turb)
-    else:
-        Max_turb = str(Max_turb)
-    Min_temp = 'M'+str(Min_temp)
+    Max_turb = '%02d' % Max_turb
+    Min_temp = Min_temp_sign + '%02d' % abs(Min_temp)
 
     detail = {}
     if len(FL) == 0:

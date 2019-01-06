@@ -4,6 +4,7 @@ import re
 reRoute = r'\b(ROUTE NO\.\s[0-9A-Z]+) +.+\b'
 rePoint = r'\b\d{3} +\d{3}\/\d{4} (\w+) +.*\b'
 reFL = r'\b(FL\s\d).+\b'
+reFLend = r'.+ALL WEIGHTS IN KILOS'
 reTurbTemp = r'\bM(\d{2})\.+.* {7}(\d{2})? .*\b'
 reAltn = r'\b(\w{4})\/\w{3}\/.*\b'
 endFpl = r'----------------------\s{3}END OF FLIGHT PLAN\s{3}----------------------[\s\S]+$'
@@ -19,34 +20,42 @@ def ofptextprocess(data, logger=None):
     point = ''
     tempPoint = []
     turbPoint = []
-    FL = ''
-    Rmk = ''
-    MEL = ''
-    RouteDef = ''
+    FL = []
+    FL_start_flag = 0
+    FL_done_flag = 0
+    Rmk = []
+    MEL = []
+    RouteDef = []
     Rmksign = 0
     MELsign = 0
-    RouteDefSign = 0
+    routeDef_start_flag = 0
+    routedef_end_flag = 0
     lines = re.sub(endFpl, '', data).split('\n')
     for line in lines:
         # FL
         if re.match(reFL, line):
-            tempo = re.match(reFL, line)
-            FL = tempo.group(0)
-            RouteDefSign = 0
+            FL_start_flag = 1
+            routedef_end_flag = 1
+        if re.match(reFLend,line):
+            FL_done_flag = 1
+        if FL_start_flag == 1 and FL_done_flag == 0:
+            if not re.match(r'^\s*$',line):
+                FL.append(line)
         # 航路详情
-        if RouteDefSign != 0:
-            RouteDef = RouteDef + "\n" + line
+        if routeDef_start_flag == 1 and routedef_end_flag == 0:
+            RouteDef.append(line)
         # 航路代号
         if re.match(reRoute, line):
             # tempo = re.match(reRoute, line)
             # ROUTE = tempo.group(1)
-            RouteDefSign = 1
+            routeDef_start_flag = 1
+            print(line)
         # RMK
         if line == rmkEnd:
             Rmksign = 0
             MELsign = 0
         if Rmksign != 0:
-            Rmk = Rmk + "\n" + line
+            Rmk.append(line)
         if line == rmkBgn:
             Rmksign = 1
             MELsign = 0
@@ -84,7 +93,7 @@ def ofptextprocess(data, logger=None):
 
         # MEL
         if MELsign != 0:
-            MEL = MEL + "\n" + line
+            MEL.append(line)
         if line == melBgnSign:
             MELsign = 1
 
@@ -95,13 +104,13 @@ def ofptextprocess(data, logger=None):
     Min_temp = 'M'+str(Min_temp)
 
     detail = {}
-    if FL == '':
+    if len(FL) == 0:
         logger.warning('ofpProcess Warning : FL empty!')
-    detail['FL'] = FL
+    detail['FL'] = "\n".join(FL)
     if RouteDef == '':
         logger.warning('ofpProcess Warning : routedefinition empty!')
-    detail['routeDef'] = RouteDef
-    detail['Rmk'] = Rmk
+    detail['routeDef'] = "\n".join(RouteDef)
+    detail['Rmk'] = "\n".join(Rmk)
     detail['Max_turb'] = Max_turb
     # 颠簸点
     if not turbPoint:
@@ -115,7 +124,7 @@ def ofptextprocess(data, logger=None):
         detail['tempPoint'] = ''
     else:
         detail['tempPoint'] = ",".join(tempPoint)
-    detail['MEL'] = MEL
+    detail['MEL'] = "\n".join(MEL)
     detail['altn0'] = ""
     detail['altn1'] = ""
     detail['altn2'] = ""

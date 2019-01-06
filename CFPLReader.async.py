@@ -71,10 +71,10 @@ async def getCFPL(session, url, fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tai
                     fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr))
                 return processofp(ofp, params)
         except Exception:
-            config.logger.warning('get cfpl warning,retry NO%d' % (cfplretry + 1), exc_info=True)
+            config.logger.warning('get cfpl warning,retry NO%d' % (cfplretry + 1))
             config.logger.warning('parameters:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s'
-                                  % (fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr))
-            time.sleep(config.networkretry_pedding * (cfplretry + 1))
+                                  % (fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr), exc_info=True)
+            time.sleep(config.networkretry_pedding)
     config.logger.error(
         'after retry %s times , still can not get CFPL info, ignore this cfpl!' % config.networkretry_max)
     return {}

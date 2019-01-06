@@ -4,7 +4,8 @@ from datetime import datetime
 from logging.handlers import TimedRotatingFileHandler
 
 # data fetch url
-basicurl = 'http://10.254.137.222/fdbs/ajax.cod.php'
+#basicurl = 'http://10.254.137.222/fdbs/ajax.cod.php'
+basicurl = 'http://127.0.0.1/fdbs/ajax.cod.php'
 
 # mysql db setting
 dbuser = 'CFPL'
@@ -24,11 +25,11 @@ timeDeltaAfter = 8
 
 # network retry setting
 networkretry_pedding = 10
-networkretry_max = 100
+networkretry_max = 20
 
 # aio setting
-aio_max_connection = 100
-aio_timeout = 100
+aio_max_connection = 50
+aio_timeout = 30
 
 # logger
 loggerpath = 'Log/cfplreader'
@@ -37,8 +38,7 @@ loggerpath = 'Log/cfplreader'
 formatter = logging.Formatter('%(asctime)s - %(module)s - %(levelname)s - %(lineno)d - %(message)s')
 
 # full log split by day
-rotatehandler = TimedRotatingFileHandler(loggerpath + '.log',
-                                         when="midnight", interval=1)
+rotatehandler = TimedRotatingFileHandler(loggerpath + '.log', when="midnight", interval=1)
 rotatehandler.suffix = "%Y-%m-%d"
 rotatehandler.setFormatter(formatter)
 rotatehandler.setLevel(logging.DEBUG)

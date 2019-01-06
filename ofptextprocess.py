@@ -35,7 +35,7 @@ def ofptextprocess(data, logger=None):
             RouteDefSign = 0
         # 航路详情
         if RouteDefSign != 0:
-            RouteDef = RouteDef + line
+            RouteDef = RouteDef + "\n" + line
         # 航路代号
         if re.match(reRoute, line):
             # tempo = re.match(reRoute, line)
@@ -46,7 +46,7 @@ def ofptextprocess(data, logger=None):
             Rmksign = 0
             MELsign = 0
         if Rmksign != 0:
-            Rmk = Rmk + line
+            Rmk = Rmk + "\n" + line
         if line == rmkBgn:
             Rmksign = 1
             MELsign = 0
@@ -84,7 +84,7 @@ def ofptextprocess(data, logger=None):
 
         # MEL
         if MELsign != 0:
-            MEL += line
+            MEL = MEL + "\n" + line
         if line == melBgnSign:
             MELsign = 1
 

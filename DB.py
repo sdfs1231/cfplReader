@@ -48,7 +48,7 @@ def insertData(ofpDict, logger=None):
     cnx.commit()
     cursor.close()
     cnx.close()
-    config.logger.info('Insert Succeed：%s！' % ofpDict['ofpNr'])
+    config.logger.info('Insert Succeed：%s' % ofpDict['ofpNr'])
 
 
 # DB query function

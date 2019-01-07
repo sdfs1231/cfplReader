@@ -103,7 +103,7 @@ def processofp(ofp, params):
             insertCount += 1
         else:
             cfplexistCount += 1
-            config.logger.info("CFPL existed : %s." % ofp['ofpNr'])
+            config.logger.info("CFPL existed : %s" % ofp['ofpNr'])
     processedCount = nocfplCount + cfplexistCount + insertCount
     config.logger.info("processing %.2f%%, done %d/%d"
                        % (processedCount / queryofpCount * 100, processedCount, queryofpCount))

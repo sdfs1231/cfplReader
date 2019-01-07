@@ -112,7 +112,7 @@ def ofptextprocess(data, logger=None):
     if RouteDef == '':
         logger.warning('ofpProcess Warning : routedefinition empty!')
     detail['routeDef'] = "\n".join(RouteDef)
-    detail['Rmk'] = "\n".join(Rmk)
+    detail['Rmk'] = re.sub(r'([\'\"])',"\\\\\g<1>","\n".join(Rmk))
     detail['Max_turb'] = Max_turb
     # 颠簸点
     if not turbPoint:
@@ -126,7 +126,7 @@ def ofptextprocess(data, logger=None):
         detail['tempPoint'] = ''
     else:
         detail['tempPoint'] = ",".join(tempPoint)
-    detail['MEL'] = "\n".join(MEL)
+    detail['MEL'] = re.sub(r'([\'\"])',"\\\\\g<1>","\n".join(MEL))
     detail['altn0'] = ""
     detail['altn1'] = ""
     detail['altn2'] = ""

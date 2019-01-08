@@ -12,7 +12,7 @@ from ofptextprocess import ofptextprocess
 
 async def session_initial():
     config.logger.info('AIOHTTP session Initial start')
-    conn = aiohttp.TCPConnector(limit=config.aio_max_connection)
+    conn = aiohttp.TCPConnector(limit=config.aio_max_connection, force_close=True)
     session_timeout = aiohttp.ClientTimeout(total=config.aio_timeout)
     session = aiohttp.ClientSession(timeout=session_timeout, connector=conn)
     config.logger.info('AIOHTTP session Initial done')
@@ -72,6 +72,7 @@ async def getCFPL(session, url, fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tai
                 return processofp(ofp, params)
         except Exception:
             config.logger.warning('get cfpl warning,retry NO%d' % (cfplretry + 1))
+            config.logger.warning('ofp :%s' % (json.dumps(ofp)))
             config.logger.warning('parameters:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s'
                                   % (fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr), exc_info=True)
             time.sleep(config.networkretry_pedding)
@@ -82,7 +83,7 @@ async def getCFPL(session, url, fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tai
 
 def processofp(ofp, params):
     global cfplexistCount, nocfplCount, insertCount, queryofpCount
-    if ofp == {}:
+    if ofp == {} or ofp == False:
         config.logger.info(
             'get CFPL done, NO CFPL:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s' % (
                 params['fltNr'], params['alnCd'], params['fltDt'], params['opSuffix'], params['depCd'], params['arvCd'],
@@ -142,14 +143,14 @@ while True:
             cfpltasks.append(getCFPL(session, config.basicurl, i['fltNr'], i['alnCd'], fltDt, i['opSuffix'],
                                      i['latestDepArpCd'], i['latestArvArpCd'], i['latestTailNr']))
     loop.run_until_complete(asyncio.gather(*cfpltasks))
-    config.logger.info("total flight count :%d" % flightlistCount)
-    config.logger.info("Take-off flight count :%d" % airborneCount)
-    config.logger.info("Query CFPL count :%d" % queryofpCount)
-    config.logger.info("NO CFPL count :%d" % nocfplCount)
-    config.logger.info("CFPL existed count :%d" % cfplexistCount)
-    config.logger.info("insert CFPL count :%d" % insertCount)
+    config.logger.info('SUMMARY : time used in this round: %ds' % ((datetime.now() - starttime).total_seconds()))
+    config.logger.info("SUMMARY : total flight count :%d" % flightlistCount)
+    config.logger.info("SUMMARY : Take-off flight count :%d" % airborneCount)
+    config.logger.info("SUMMARY : Query CFPL count :%d" % queryofpCount)
+    config.logger.info("SUMMARY : NO CFPL count :%d" % nocfplCount)
+    config.logger.info("SUMMARY : CFPL existed count :%d" % cfplexistCount)
+    config.logger.info("SUMMARY : insert CFPL count :%d" % insertCount)
     loop.run_until_complete(session_close())
-    config.logger.info('time used in this round: %ds' % ((datetime.now() - starttime).total_seconds()))
     config.logger.info('wait for next time : %ds' % config.interval)
     time.sleep(config.interval)
 

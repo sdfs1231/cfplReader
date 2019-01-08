@@ -24,12 +24,12 @@ timeDeltaBefore = 8
 timeDeltaAfter = 8
 
 # network retry setting
-networkretry_pedding = 10
+networkretry_pedding = 3
 networkretry_max = 20
 
 # aio setting
-aio_max_connection = 50
-aio_timeout = 30
+aio_max_connection = 100
+aio_timeout = 60
 
 # logger
 loggerpath = 'Log/cfplreader'

@@ -66,3 +66,6 @@ def saveOpf2File(CFPLname, data, date):
     os.makedirs(os.path.dirname(CFPLpath + CFPLname + ".txt"), exist_ok=True)
     with open(CFPLpath + CFPLname + ".txt", 'a') as f:
         f.write(data)
+
+def repeat_to_length(string_to_expand, length):
+    return (string_to_expand * (int(length/len(string_to_expand))+1))[:length]

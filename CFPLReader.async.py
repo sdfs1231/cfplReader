@@ -1,5 +1,7 @@
 #! python3
 # -*- coding: utf-8 -*-
+
+import os
 import asyncio
 import json
 import aiohttp
@@ -144,15 +146,22 @@ while True:
             cfpltasks.append(getCFPL(session, config.basicurl, i['fltNr'], i['alnCd'], fltDt, i['opSuffix'],
                                      i['latestDepArpCd'], i['latestArvArpCd'], i['latestTailNr']))
     loop.run_until_complete(asyncio.gather(*cfpltasks))
+    loop.run_until_complete(session_close())
+    #config.logger.info('wait for next time : %ds' % config.interval)
+    os.system("cls")
     config.logger.info('SUMMARY : time used in this round: %ds' % ((datetime.now() - starttime).total_seconds()))
-    config.logger.info("SUMMARY : total flight count :%d" % flightlistCount)
-    config.logger.info("SUMMARY : Take-off flight count :%d" % airborneCount)
-    config.logger.info("SUMMARY : Query CFPL count :%d" % queryofpCount)
-    config.logger.info("SUMMARY : NO CFPL count :%d" % nocfplCount)
+    config.logger.info("SUMMARY : total flight info count :%d" % flightlistCount)
+    config.logger.info("SUMMARY : take-off flight count :%d" % airborneCount)
+    config.logger.info("SUMMARY : query CFPL count :%d" % queryofpCount)
+    config.logger.info("SUMMARY : no CFPL count :%d" % nocfplCount)
     config.logger.info("SUMMARY : CFPL existed count :%d" % cfplexistCount)
     config.logger.info("SUMMARY : insert CFPL count :%d" % insertCount)
-    loop.run_until_complete(session_close())
-    config.logger.info('wait for next time : %ds' % config.interval)
-    time.sleep(config.interval)
-
+    #timer_count = 2
+    for timer_count in range(config.interval+1):
+        print('\r',
+              (config.repeat_to_length('-=', 60) + 'wait for next time : %ds' + config.repeat_to_length('-=', 60)) % (
+                      config.interval - timer_count), sep='', end='')
+        time.sleep(1)
+    os.system("cls")
 # loop.close()
+

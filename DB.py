@@ -19,7 +19,7 @@ class Database:
                                                    user=self.username,
                                                    password=self.password,
                                                    database=self.db_name)
-                self.cursor = self.cnx.cursor()
+                #self.cursor = self.cnx.cursor()
                 self.logger.info('connected to DB')
             except mysql.connector.Error:
                 self.logger.warning('connecting DB failed', exc_info=True)
@@ -59,10 +59,10 @@ class Database:
                ",%(cruiseFlDescription)s,%(FL)s,%(routeDef)s,%(Rmk)s,%(Max_turb)s,%(turbPoint)s,%(Min_temp)s,%(tempPoint)s"
                ",%(altn1)s,%(altn2)s,%(altn3)s)")
         try:
-
-            self.cursor.execute(sql, ofpDict)
+            cursor = self.cnx.cursor()
+            cursor.execute(sql, ofpDict)
             self.cnx.commit()
-            #cursor.close()
+            cursor.close()
             #self.cnx.close()
             self.logger.info('Insert Succeed：%s' % ofpDict['ofpNr'])
         except Exception:
@@ -76,9 +76,9 @@ class Database:
 
         query = "SELECT count(*) FROM " + self.db_name + "." + self.table_name + " where ofpNr = '" + ofpNr + "'"
         try:
-            #cursor = self.cnx.cursor()
-            self.cursor.execute(query)
-            count = self.cursor.fetchone()[0]
+            cursor = self.cnx.cursor()
+            cursor.execute(query)
+            count = cursor.fetchone()[0]
             #cursor.close()
             return count
         except Exception:

@@ -213,10 +213,11 @@ while True:
     logger.info("SUMMARY : CFPL existed count :%d" % cfplexistCount)
     logger.info("SUMMARY : insert CFPL count :%d" % insertCount)
     interval = int(config['INTERVAL']['interval'])
+    # timer_count = 0
     for timer_count in range(interval + 1):
         print('\r',
               (repeat_to_length('-=', 60) + 'wait for next time : %ds' + repeat_to_length('-=', 60)) % (
-                      interval - timer_count), sep='', end='')
+                      interval - timer_count), sep='', end='',flush=True)
         time.sleep(1)
     os.system("cls")
 # loop.close()

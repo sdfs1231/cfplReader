@@ -5,3 +5,4 @@ _testfile/*
 .idea/*
 LOG/*
 .DS_Store
+*test*

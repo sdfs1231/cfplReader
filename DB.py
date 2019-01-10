@@ -79,7 +79,7 @@ class Database:
             cursor = self.cnx.cursor()
             cursor.execute(query)
             count = cursor.fetchone()[0]
-            #cursor.close()
+            cursor.close()
             return count
         except Exception:
             self.logger.warning('query error:%s' % ofpNr, exc_info=True)

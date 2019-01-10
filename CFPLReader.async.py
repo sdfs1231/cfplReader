@@ -1,3 +1,5 @@
+#! python3
+# -*- coding: utf-8 -*-
 import asyncio
 import json
 import aiohttp
@@ -72,7 +74,6 @@ async def getCFPL(session, url, fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tai
                 return processofp(ofp, params)
         except Exception:
             config.logger.warning('get cfpl warning,retry NO%d' % (cfplretry + 1))
-            config.logger.warning('ofp :%s' % (json.dumps(ofp)))
             config.logger.warning('parameters:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s'
                                   % (fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr), exc_info=True)
             time.sleep(config.networkretry_pedding)
@@ -83,7 +84,7 @@ async def getCFPL(session, url, fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tai
 
 def processofp(ofp, params):
     global cfplexistCount, nocfplCount, insertCount, queryofpCount
-    if ofp == {} or ofp == False:
+    if ofp == {} or ofp is False:
         config.logger.info(
             'get CFPL done, NO CFPL:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s' % (
                 params['fltNr'], params['alnCd'], params['fltDt'], params['opSuffix'], params['depCd'], params['arvCd'],

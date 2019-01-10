@@ -1,4 +1,5 @@
 import re
+import logging
 
 # 正则表达式
 reRoute = r'\b(ROUTE NO\.\s[0-9A-Z]+) +.+\b'
@@ -13,7 +14,7 @@ rmkBgn = 'DISP RMKS'
 melBgnSign = '-------------      -----------'
 
 
-def ofptextprocess(data, logger=None):
+def ofptextprocess(data, logger=logging.getLogger()):
     ALTN = []
     Min_temp = 999
     Min_temp_sign = ''

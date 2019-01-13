@@ -47,18 +47,18 @@ async def getflightlist(session, baseurl):
                 flightlistJSON = await resp.json()
                 if flightlistJSON == {} or flightlistJSON == b'':
                     logger.warning('get FlightList retrun null!')
-                    time.sleep(config['NETWORK']['retry_waitting'])
+                    time.sleep(int(config['NETWORK']['retry_waiting']))
                     continue
                 else:
                     if flightlistJSON['FlightInfo'] == {} or flightlistJSON['FlightInfo'] == b'':
                         logger.warning('get FlightList return no flightInfo!')
-                        time.sleep(config['NETWORK']['retry_waitting'])
+                        time.sleep(int(config['NETWORK']['retry_waiting']))
                         continue
                     else:
                         return await resp.json()
         except Exception:
             logger.warning('get FlightList warning,retry NO%s' % str(i + 1), exc_info=True)
-            time.sleep(config['NETWORK']['retry_waitting'] * (i + 1))
+            time.sleep(int(config['NETWORK']['retry_waiting'] * (i + 1)))
     logger.error('after retry %s times , still can not get flightlist info, program exit!'
                  % config['NETWORK']['retry_max'])
     await session_close()
@@ -81,7 +81,8 @@ async def getCFPL(session, db, url, fltNr, alnCd, fltDt, opSuffix, depCd, arvCd,
             logger.warning('get cfpl warning,retry NO%d' % (cfplretry + 1))
             logger.warning('parameters:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s'
                            % (fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr), exc_info=True)
-            time.sleep(config['NETWORK']['retry_waitting'])
+            #continue
+            time.sleep(int(config['NETWORK']['retry_waiting']))
     logger.error(
         'after retry %s times , still can not get CFPL info, ignore this cfpl!' % config['NETWORK']['retry_max'])
     return {}

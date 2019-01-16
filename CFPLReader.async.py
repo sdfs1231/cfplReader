@@ -4,6 +4,7 @@
 import os
 import asyncio
 import json
+from json import JSONDecodeError
 import aiohttp
 from datetime import datetime, timedelta, timezone
 import time
@@ -19,8 +20,8 @@ from ofptextprocess import ofptextprocess
 
 async def session_initial():
     logger.info('AIOHTTP session Initial start')
-    conn = aiohttp.TCPConnector(limit=int(config['AIOHTTP']['max_connection']), force_close=True)
-    session_timeout = aiohttp.ClientTimeout(total=int(config['AIOHTTP']['timeout']))
+    conn = aiohttp.TCPConnector(limit=max_connection, force_close=True)
+    session_timeout = aiohttp.ClientTimeout(total=timeout)
     session = aiohttp.ClientSession(timeout=session_timeout, connector=conn)
     logger.info('AIOHTTP session Initial done')
     return session
@@ -33,11 +34,11 @@ async def session_close():
 
 
 async def getflightlist(session, baseurl):
-    for i in range(int(config['NETWORK']['retry_max'])):
+    for i in range(retry_max):
         try:
             now = datetime.now()
-            starttime = now - timedelta(hours=int(config['FLIGHTLIST']['timeDeltaBefore']))
-            endtime = now + timedelta(hours=int(config['FLIGHTLIST']['timeDeltaAfter']))
+            starttime = now - timedelta(hours=timeDeltaBefore)
+            endtime = now + timedelta(hours=timeDeltaAfter)
             datetimefomartter = "%Y%m%d%H%M"
             params = {'method': 'getFlightInfo', 'latestDepDtFrom': starttime.__format__(datetimefomartter),
                       'latestDepDtTo': endtime.__format__(datetimefomartter)}
@@ -45,22 +46,31 @@ async def getflightlist(session, baseurl):
             async with session.get(baseurl, params=params) as resp:
                 logger.info('get FlightList done: ' + json.dumps(params))
                 flightlistJSON = await resp.json()
-                if flightlistJSON == {} or flightlistJSON == b'':
+                if flightlistJSON == {} or type(flightlistJSON) is not dict:
                     logger.warning('get FlightList retrun null!')
-                    time.sleep(int(config['NETWORK']['retry_waiting']))
+                    time.sleep(retry_waiting)
                     continue
                 else:
-                    if flightlistJSON['FlightInfo'] == {} or flightlistJSON['FlightInfo'] == b'':
+                    if flightlistJSON.get('FlightInfo') is None:
                         logger.warning('get FlightList return no flightInfo!')
-                        time.sleep(int(config['NETWORK']['retry_waiting']))
+                        time.sleep(retry_waiting)
                         continue
                     else:
                         return await resp.json()
-        except Exception:
+        except TimeoutError as timeError:
+            logger.warning(timeError.strerror)
             logger.warning('get FlightList warning,retry NO%s' % str(i + 1), exc_info=True)
-            time.sleep(int(config['NETWORK']['retry_waiting'] * (i + 1)))
+            time.sleep(retry_waiting * (i + 1))
+        except JSONDecodeError as jsonError:
+            logger.warning(jsonError.doc)
+            logger.warning('get FlightList warning,retry NO%s' % str(i + 1), exc_info=True)
+            time.sleep(retry_waiting * (i + 1))
+        except Exception as e:
+            logger.warning(str(e))
+            logger.warning('get FlightList warning,retry NO%s' % str(i + 1), exc_info=True)
+            time.sleep(retry_waiting * (i + 1))
     logger.error('after retry %s times , still can not get flightlist info, program exit!'
-                 % config['NETWORK']['retry_max'])
+                 % retry_max)
     await session_close()
     exit()
 
@@ -70,21 +80,33 @@ async def getCFPL(session, db, url, fltNr, alnCd, fltDt, opSuffix, depCd, arvCd,
         fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr))
     params = {'method': 'getCFPL', 'fltNr': fltNr, 'alnCd': alnCd, 'fltDt': fltDt, 'opSuffix': opSuffix,
               'depCd': depCd, 'arvCd': arvCd, 'tailNr': tailNr, 'type': "0"}
-    for cfplretry in range(int(config['NETWORK']['retry_max'])):
+    for cfplretry in range(retry_max):
         try:
             async with session.get(url, params=params) as CFPLResp:
                 ofp = await CFPLResp.json()
                 logger.info('get CFPL end:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s' % (
                     fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr))
                 return processofp(db, ofp, params)
-        except Exception:
+        except TimeoutError as timeError:
             logger.warning('get cfpl warning,retry NO%d' % (cfplretry + 1))
+            logger.warning(timeError.strerror)
             logger.warning('parameters:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s'
                            % (fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr), exc_info=True)
-            #continue
-            time.sleep(int(config['NETWORK']['retry_waiting']))
+            time.sleep(retry_waiting)
+        except JSONDecodeError as jsonError:
+            logger.warning('get cfpl warning,retry NO%d' % (cfplretry + 1))
+            logger.warning(jsonError.doc)
+            logger.warning('parameters:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s'
+                           % (fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr), exc_info=True)
+            time.sleep(retry_waiting)
+        except Exception as e:
+            logger.warning('get cfpl warning,retry NO%d' % (cfplretry + 1))
+            logger.warning(str(e))
+            logger.warning('parameters:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s'
+                           % (fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr), exc_info=True)
+            time.sleep(retry_waiting)
     logger.error(
-        'after retry %s times , still can not get CFPL info, ignore this cfpl!' % config['NETWORK']['retry_max'])
+        'after retry %s times , still can not get CFPL info, ignore this cfpl!' % retry_max)
     return {}
 
 
@@ -118,7 +140,7 @@ def processofp(db, ofp, params):
 
 
 def saveOpf2File(CFPLname, data, date):
-    CFPLpath = config['CFPL']['save_path'] + date + '/'
+    CFPLpath = save_path + date + '/'
     os.makedirs(os.path.dirname(CFPLpath + CFPLname + ".txt"), exist_ok=True)
     with open(CFPLpath + CFPLname + ".txt", 'a') as f:
         f.write(data)
@@ -130,16 +152,17 @@ def repeat_to_length(string_to_expand, length):
 
 def logging_initial():
     # formatter
-    formatter = logging.Formatter(config['LOGGING']['logformat'])
+    formatter = logging.Formatter(logformat)
 
     # full log split by day
-    rotatehandler = TimedRotatingFileHandler(config['LOGGING']['loggerpath'] + '.log', when="midnight", interval=1)
-    rotatehandler.suffix = config['LOGGING']['loggersuffix']
+    rotatehandler = TimedRotatingFileHandler(loggerpath + '.log', when="midnight", interval=1,
+                                             backupCount=10)
+    rotatehandler.suffix = loggersuffix
     rotatehandler.setFormatter(formatter)
     rotatehandler.setLevel(logging.DEBUG)
 
     # warning+ log
-    debugHandler = logging.FileHandler(config['LOGGING']['loggerpath'] + '_debug.log')
+    debugHandler = logging.FileHandler(loggerpath + '_debug.log')
     debugHandler.setFormatter(formatter)
     debugHandler.setLevel(logging.WARNING)
 
@@ -159,6 +182,33 @@ def logging_initial():
 
 config = configparser.ConfigParser()
 config.read('config.ini')
+baseURL = config['API']['baseURL']
+# mysql db setting
+dbhost = config['MYSQL']['host']
+dbport = config['MYSQL']['port']
+dbuser = config['MYSQL']['user']
+dbpassword = config['MYSQL']['pass']
+dbname = config['MYSQL']['dbname']
+tablename = config['MYSQL']['tablename']
+# cfpl save path
+save_path = config['CFPL']['save_path']
+# sleep Interval per round
+interval = int(config['INTERVAL']['interval'])
+# getFlightList setting
+timeDeltaBefore = int(config['FLIGHTLIST']['timeDeltaBefore'])
+timeDeltaAfter = int(config['FLIGHTLIST']['timeDeltaAfter'])
+# network retry setting
+retry_waiting = int(config['NETWORK']['retry_waiting'])
+retry_max = int(config['NETWORK']['retry_max'])
+
+#aiohttp
+max_connection = int(config['AIOHTTP']['max_connection'])
+timeout = int(config['AIOHTTP']['timeout'])
+
+#logger
+loggerpath = config['LOGGING']['loggerpath']
+logformat = config['LOGGING']['logformat']
+loggersuffix = config['LOGGING']['loggersuffix']
 logger = logging_initial()
 logger.info('CFPL Reader Program Start')
 logger.info('config read finfished')
@@ -167,7 +217,7 @@ loop = asyncio.get_event_loop()
 while True:
     session = loop.run_until_complete(session_initial())
     starttime = datetime.now()
-    flightlist = loop.run_until_complete(getflightlist(session, config['API']['baseURL']))
+    flightlist = loop.run_until_complete(getflightlist(session, baseURL))
     flightinfo = flightlist['FlightInfo']
     flightlistCount = len(flightinfo)
     airborneCount = 0
@@ -176,12 +226,12 @@ while True:
     cfplexistCount = 0
     insertCount = 0
     cfpltasks = []
-    db = Database(config['MYSQL']['host'],
-                  config['MYSQL']['port'],
-                  config['MYSQL']['user'],
-                  config['MYSQL']['pass'],
-                  config['MYSQL']['dbname'],
-                  config['MYSQL']['tablename'],
+    db = Database(dbhost,
+                  dbport,
+                  dbuser,
+                  dbpassword,
+                  dbname,
+                  tablename,
                   logger)
     for index, i in enumerate(flightinfo, start=0):
         # logger.info('processing : %s/%s' % (str(index + 1), flightlistCount))
@@ -199,11 +249,10 @@ while True:
                 i['opSuffix'] = ''
             queryofpCount += 1
             cfpltasks.append(
-                getCFPL(session, db, config['API']['baseURL'], i['fltNr'], i['alnCd'], fltDt,
+                getCFPL(session, db, baseURL, i['fltNr'], i['alnCd'], fltDt,
                         i['opSuffix'], i['latestDepArpCd'], i['latestArvArpCd'], i['latestTailNr']))
     loop.run_until_complete(asyncio.gather(*cfpltasks))
     loop.run_until_complete(session_close())
-    # logger.info('wait for next time : %ds' % config.interval)
     del db
     os.system("cls")
     logger.info('SUMMARY : time used in this round: %ds' % ((datetime.now() - starttime).total_seconds()))
@@ -213,7 +262,6 @@ while True:
     logger.info("SUMMARY : no CFPL count :%d" % nocfplCount)
     logger.info("SUMMARY : CFPL existed count :%d" % cfplexistCount)
     logger.info("SUMMARY : insert CFPL count :%d" % insertCount)
-    interval = int(config['INTERVAL']['interval'])
     # timer_count = 0
     for timer_count in range(interval + 1):
         print('\r',

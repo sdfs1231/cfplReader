@@ -57,17 +57,16 @@ async def getflightlist(session, baseurl):
                         continue
                     else:
                         return await resp.json()
-        except TimeoutError as timeError:
-            logger.warning(timeError.strerror)
-            logger.warning('get FlightList warning,retry NO%s' % str(i + 1), exc_info=True)
+        except TimeoutError:
+            logger.info('get FlightList timeout,retry NO%d' % (i + 1))
             time.sleep(retry_waiting * (i + 1))
         except JSONDecodeError as jsonError:
             logger.warning(jsonError.doc)
-            logger.warning('get FlightList warning,retry NO%s' % str(i + 1), exc_info=True)
+            logger.warning('get FlightList JSONDecodeError,retry NO%d' % (i + 1))
             time.sleep(retry_waiting * (i + 1))
         except Exception as e:
             logger.warning(str(e))
-            logger.warning('get FlightList warning,retry NO%s' % str(i + 1), exc_info=True)
+            logger.warning('get FlightList exception,retry NO%d' % (i + 1), exc_info=True)
             time.sleep(retry_waiting * (i + 1))
     logger.error('after retry %s times , still can not get flightlist info, program exit!'
                  % retry_max)
@@ -84,23 +83,22 @@ async def getCFPL(session, db, url, fltNr, alnCd, fltDt, opSuffix, depCd, arvCd,
         try:
             async with session.get(url, params=params) as CFPLResp:
                 ofp = await CFPLResp.json()
-                logger.info('get CFPL end:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s' % (
-                    fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr))
+                # logger.info('get CFPL end:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s' % (
+                #     fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr))
                 return processofp(db, ofp, params)
-        except TimeoutError as timeError:
-            logger.warning('get cfpl warning,retry NO%d' % (cfplretry + 1))
-            logger.warning(timeError.strerror)
-            logger.warning('parameters:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s'
-                           % (fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr), exc_info=True)
+        except TimeoutError:
+            logger.info('get cfpl timeout,retry NO%d :'
+                        'fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s'
+                        % ((cfplretry + 1), fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr))
             time.sleep(retry_waiting)
         except JSONDecodeError as jsonError:
-            logger.warning('get cfpl warning,retry NO%d' % (cfplretry + 1))
+            logger.warning('get cfpl jsonDecodeError,retry NO%d' % (cfplretry + 1))
             logger.warning(jsonError.doc)
             logger.warning('parameters:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s'
-                           % (fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr), exc_info=True)
+                           % (fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr))
             time.sleep(retry_waiting)
         except Exception as e:
-            logger.warning('get cfpl warning,retry NO%d' % (cfplretry + 1))
+            logger.warning('get cfpl exception,retry NO%d' % (cfplretry + 1))
             logger.warning(str(e))
             logger.warning('parameters:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s'
                            % (fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr), exc_info=True)
@@ -201,11 +199,11 @@ timeDeltaAfter = int(config['FLIGHTLIST']['timeDeltaAfter'])
 retry_waiting = int(config['NETWORK']['retry_waiting'])
 retry_max = int(config['NETWORK']['retry_max'])
 
-#aiohttp
+# aiohttp
 max_connection = int(config['AIOHTTP']['max_connection'])
 timeout = int(config['AIOHTTP']['timeout'])
 
-#logger
+# logger
 loggerpath = config['LOGGING']['loggerpath']
 logformat = config['LOGGING']['logformat']
 loggersuffix = config['LOGGING']['loggersuffix']
@@ -255,18 +253,17 @@ while True:
     loop.run_until_complete(session_close())
     del db
     os.system("cls")
-    logger.info('SUMMARY : time used in this round: %ds' % ((datetime.now() - starttime).total_seconds()))
-    logger.info("SUMMARY : total flight info count :%d" % flightlistCount)
-    logger.info("SUMMARY : take-off flight count :%d" % airborneCount)
-    logger.info("SUMMARY : query CFPL count :%d" % queryofpCount)
-    logger.info("SUMMARY : no CFPL count :%d" % nocfplCount)
-    logger.info("SUMMARY : CFPL existed count :%d" % cfplexistCount)
-    logger.info("SUMMARY : insert CFPL count :%d" % insertCount)
-    # timer_count = 0
+    logger.info('SUMMARY for previous round , used time : %ds' % ((datetime.now() - starttime).total_seconds()))
+    logger.info("total flight info count :%d" % flightlistCount)
+    logger.info("take-off flight count :%d" % airborneCount)
+    logger.info("query CFPL count :%d" % queryofpCount)
+    logger.info("no CFPL count :%d" % nocfplCount)
+    logger.info("CFPL existed count :%d" % cfplexistCount)
+    logger.info("insert CFPL count :%d" % insertCount)
     for timer_count in range(interval + 1):
         print('\r',
-              (repeat_to_length('-=', 60) + 'wait for next time : %ds' + repeat_to_length('-=', 60)) % (
-                      interval - timer_count), sep='', end='',flush=True)
+              (repeat_to_length('-=', 60) + 'wait for next round : %ds' + repeat_to_length('-=', 60)) % (
+                      interval - timer_count), sep='', end='', flush=True)
         time.sleep(1)
     os.system("cls")
 # loop.close()

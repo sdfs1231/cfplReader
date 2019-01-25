@@ -57,7 +57,7 @@ async def getflightlist(session, baseurl):
                         continue
                     else:
                         return await resp.json()
-        except TimeoutError:
+        except asyncio.TimeoutError as TimeException:
             logger.info('get FlightList timeout,retry NO%d' % (i + 1))
             time.sleep(retry_waiting * (i + 1))
         except JSONDecodeError as jsonError:
@@ -86,7 +86,7 @@ async def getCFPL(session, db, url, fltNr, alnCd, fltDt, opSuffix, depCd, arvCd,
                 # logger.info('get CFPL end:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s' % (
                 #     fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr))
                 return processofp(db, ofp, params)
-        except TimeoutError:
+        except asyncio.TimeoutError as TimeException:
             logger.info('get cfpl timeout,retry NO%d :'
                         'fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s'
                         % ((cfplretry + 1), fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr))
@@ -110,13 +110,16 @@ async def getCFPL(session, db, url, fltNr, alnCd, fltDt, opSuffix, depCd, arvCd,
 
 def processofp(db, ofp, params):
     global cfplexistCount, nocfplCount, insertCount, queryofpCount
-    if ofp == {} or ofp is False:
+    if ofp == {} or type(ofp) is not dict:
         logger.info(
             'get CFPL done, NO CFPL:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s' % (
                 params['fltNr'], params['alnCd'], params['fltDt'], params['opSuffix'], params['depCd'], params['arvCd'],
                 params['tailNr']))
         nocfplCount += 1
     else:
+        if not 'ofpNr' in ofp:
+            logger.warning('ofp has no key ofpNr:%s' % json.dumps(ofp))
+            return -1
         if db.check_ofpNr(ofp['ofpNr']) == 0:
             cfplDecode = base64.b64decode(ofp['ofpText']).decode('utf-8')
             saveOpf2File(ofp['ofpNr'], cfplDecode, ofp['fltDt'])

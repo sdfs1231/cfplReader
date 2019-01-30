@@ -68,10 +68,15 @@ async def getflightlist(session, baseurl):
             logger.warning(str(e))
             logger.warning('get FlightList exception,retry NO%d' % (i + 1), exc_info=True)
             time.sleep(retry_waiting * (i + 1))
-    logger.error('after retry %s times , still can not get flightlist info, program exit!'
+    logger.error('after retry %s times , still can not get flightlist info, program wait 300s!'
                  % retry_max)
-    await session_close()
-    exit()
+    for timer_count in range(interval + 1):
+        print('\r',
+              (repeat_to_length('-=', 60) + 'wait for next round : %ds' + repeat_to_length('-=', 60)) % (
+                      interval - timer_count), sep='', end='', flush=True)
+        time.sleep(1)
+    #await session_close()
+    #exit()
 
 
 async def getCFPL(session, db, url, fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr):
@@ -119,6 +124,7 @@ def processofp(db, ofp, params):
     else:
         if not 'ofpNr' in ofp:
             logger.warning('ofp has no key ofpNr:%s' % json.dumps(ofp))
+            nocfplCount += 1
             return -1
         if db.check_ofpNr(ofp['ofpNr']) == 0:
             cfplDecode = base64.b64decode(ofp['ofpText']).decode('utf-8')

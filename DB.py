@@ -32,6 +32,9 @@ class Database:
         self.cnx.close()
         self.logger.info('connection closed')
 
+    def getCnx(self):
+        return self.cnx
+
     def insertData(self,ofpDict):
         # 插入数据
         for key in ofpDict:

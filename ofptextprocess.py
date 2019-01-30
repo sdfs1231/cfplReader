@@ -12,9 +12,13 @@ endFpl = r'----------------------\s{3}END OF FLIGHT PLAN\s{3}-------------------
 rmkEnd = '                         ALTERNATE SUMMARY'
 rmkBgn = 'DISP RMKS'
 melBgnSign = '-------------      -----------'
+reEqpCd = r'^ACFT \S+ (\S+),'
+reTargetFuel = r'^TARGET ARRIVAL FUEL( +)([0-9]+)KGS$'
 
 
 def ofptextprocess(data, logger=logging.getLogger()):
+    eqpCd = ''
+    targetFuel = 0
     ALTN = []
     Min_temp = 999
     Min_temp_sign = ''
@@ -34,6 +38,14 @@ def ofptextprocess(data, logger=logging.getLogger()):
     routedef_end_flag = 0
     lines = re.sub(endFpl, '', data).split('\n')
     for line in lines:
+        #eqpCd
+        eqpCdResult = re.match(reEqpCd,line)
+        if eqpCdResult:
+            eqpCd = eqpCdResult.group(1)
+        reTargetFuelResult = re.match(reTargetFuel,line)
+        if reTargetFuelResult:
+            targetFuel = int(reTargetFuelResult.group(2))
+
         # FL
         if re.match(reFL, line):
             FL_start_flag = 1
@@ -107,6 +119,8 @@ def ofptextprocess(data, logger=logging.getLogger()):
     Min_temp = Min_temp_sign + '%02d' % abs(Min_temp)
 
     detail = {}
+    detail['eqpCd'] = eqpCd
+    detail['targetFuel'] = targetFuel
     if len(FL) == 0:
         logger.warning('ofpProcess Warning : FL empty!')
     detail['FL'] = "\n".join(FL)

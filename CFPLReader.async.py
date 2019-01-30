@@ -249,7 +249,7 @@ while True:
                 i['fltDt'], i['alnCd'], i['fltNr'], i['opSuffix'], i['latestTailNr'], i['depStsCd']))
             continue
         else:
-            fltDt = datetime.strptime(i['fltDt'] + " +0800", "%Y-%m-%d %H:%M %z").astimezone(timezone.utc)
+            fltDt = datetime.strptime(i['schDepDt'] + " +0800", "%Y-%m-%d %H:%M %z").astimezone(timezone.utc)
             fltDt = fltDt.__format__('%Y%m%d')
 
             if i['opSuffix'] == {'0': ' '}:

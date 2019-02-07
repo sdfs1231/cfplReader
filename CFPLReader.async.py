@@ -217,7 +217,7 @@ loggerpath = config['LOGGING']['loggerpath']
 logformat = config['LOGGING']['logformat']
 loggersuffix = config['LOGGING']['loggersuffix']
 logger = logging_initial()
-logger.info('CFPL Reader Program Start')
+logger.warning('CFPL Reader Program Start')
 logger.info('config read finfished')
 loop = asyncio.get_event_loop()
 

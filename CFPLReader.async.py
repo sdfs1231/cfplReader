@@ -88,8 +88,6 @@ async def getCFPL(session, db, url, fltNr, alnCd, fltDt, opSuffix, depCd, arvCd,
         try:
             async with session.get(url, params=params) as CFPLResp:
                 ofp = await CFPLResp.json()
-                # logger.info('get CFPL end:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s' % (
-                #     fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr))
                 return processofp(db, ofp, params)
         except asyncio.TimeoutError as TimeException:
             logger.info('get cfpl timeout,retry NO%d :'
@@ -109,7 +107,9 @@ async def getCFPL(session, db, url, fltNr, alnCd, fltDt, opSuffix, depCd, arvCd,
                            % (fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr), exc_info=True)
             time.sleep(retry_waiting)
     logger.error(
-        'after retry %s times , still can not get CFPL info, ignore this cfpl!' % retry_max)
+        'after retry %s times , abort! : ' \
+        'fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s' % (
+            retry_max, fltNr, alnCd, fltDt, opSuffix, depCd, arvCd, tailNr))
     return {}
 
 
@@ -122,7 +122,7 @@ def processofp(db, ofp, params):
                 params['tailNr']))
         nocfplCount += 1
     else:
-        if not 'ofpNr' in ofp:
+        if 'ofpNr' not in ofp:
             logger.warning('ofp has no key ofpNr:%s' % json.dumps(ofp))
             nocfplCount += 1
             return -1

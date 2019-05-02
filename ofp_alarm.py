@@ -45,7 +45,7 @@ def turb_alarm(alarmdict,new_dict):
 
 def temp_alarm(alarmdict,new_dict):
     if new_dict['Min_temp']>=config['ALARM']['Min_temp']:
-        alarmdict['alarmType']='min_temp_check'
+        alarmdict['alarmType']='temp_alarm'
         alarmdict['alarmContent'] = json.dumps({"alarmOfp": {
             "Min_temp": new_dict['Min_temp']
         }, "oldOfp": {

@@ -1,10 +1,11 @@
 import mysql.connector
 import logging
 import time
+import json
 
 
 class Database:
-    def __init__(self, host, port, username, password, db_name, table_name, logger=logging.getLogger()):
+    def __init__(self, host, port, username, password, db_name, table_name, alarmtable, aircrafttable, logger=logging.getLogger()):
         self.host = host
         self.port = port
         self.username = username
@@ -12,6 +13,8 @@ class Database:
         self.db_name = db_name
         self.table_name = table_name
         self.logger = logger
+        self.alarmtable=alarmtable
+        self.aircrafttable = aircrafttable
         while True:
             try:
                 self.cnx = mysql.connector.connect(host=self.host,
@@ -88,3 +91,60 @@ class Database:
             self.logger.warning('query error:%s' % ofpNr, exc_info=True)
             self.logger.warning("sql statement : %s " % query)
             return -1
+
+    def fetch_latest_ofp(self, fltDt, fltNr, opSuffix, depCd, arvCd, depDt):
+        if opSuffix is None:
+            opSuffix = ''
+            query = "SELECT * FROM "+self.db_name+"."+ self.table_name+ \
+                " WHERE fltDt = %s AND fltNr = %s AND opSuffix IS NULL AND depCd = %s " \
+                "AND arvCd = %s AND ABS(TIMESTAMPDIFF(HOUR,depDt,%s)) < 16 ORDER BY uploadTm DESC LIMIT 1"
+        else:
+            query = "SELECT * FROM "+self.db_name+"."+ self.table_name+ \
+                " WHERE fltDt = %s AND fltNr = %s AND opSuffix = '"+opSuffix+"' AND depCd = %s " \
+                "AND arvCd = %s AND ABS(TIMESTAMPDIFF(HOUR,depDt,%s)) < 16 ORDER BY uploadTm DESC LIMIT 1"
+
+        try:
+            cursor = self.cnx.cursor(dictionary=True, buffered=True)
+            cursor.execute(query, (fltDt, fltNr,  depCd, arvCd, depDt))
+            previous_cfpl = cursor.fetchone()
+            cursor.close()
+            return previous_cfpl
+        except Exception:
+            self.logger.warning('query error:%s CSN%s%s %s-%s', (fltDt, fltNr, opSuffix, depCd, arvCd, depDt), exc_info=True)
+            #self.logger.warning("sql statement : %s " % (query,(fltDt, fltNr, opSuffix, depCd, arvCd, depDt)))
+            return -1
+
+    def insert_alarm(self,alarmDict):
+        self.logger.warning(json.dumps(alarmDict))
+        # alarm_text=alarmDict['route_alarm']+' '+alarmDict['tailNr_alarm']+' '+\
+        #            alarmDict['altn_alarm']+' '+alarmDict['fuel_alarm']+' '+alarmDict['others']
+        sql=("INSERT INTO " + self.db_name + "."+ self.alarmtable+
+             " (fltDt,fltNr,opSuffix,tailNr,depDt,depCd,arvCd,alarmOfpNr,oldOfpNr,alarmType,alarmContent) "
+               "VALUES (%(fltDt)s,%(fltNr)s,%(opSuffix)s,%(tailNr)s,%(depDt)s,%(depCd)s,%(arvCd)s,%(alarmOfpNr)s,%(oldOfpNr)s,%(alarmType)s,%(alarmContent)s)")
+
+        try:
+            cursor = self.cnx.cursor()
+            cursor.execute(sql,alarmDict)
+            self.cnx.commit()
+            cursor.close()
+            #self.cnx.close()
+            self.logger.info('!!!!Find alarm!!!!: %s' % alarmDict['fltNr'])
+            return 0
+        except Exception:
+            self.logger.warning('DB INSERT error : %s' % alarmDict['fltNr'], exc_info=True)
+            self.logger.warning('d:%s' % json.dumps(alarmDict))
+            self.logger.warning("SQL statement : " + sql)
+            return 0
+
+    def load_aircraft(self):
+        sql="""SELECT `tailNr` from `"""+self.db_name+"`.`" + self.aircrafttable + "`"
+        try:
+            cursor = self.cnx.cursor(dictionary=True, buffered=True)
+            cursor.execute(sql)
+            aircraft = cursor.fetchall()
+            cursor.close()
+            return list(map(lambda x:x['tailNr'],aircraft))
+
+        except Exception:
+            self.logger.warning("SQL statement : " + sql)
+            return 0

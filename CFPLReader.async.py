@@ -16,6 +16,7 @@ from logging.handlers import TimedRotatingFileHandler
 # user defined package
 from DB import Database
 from ofptextprocess import ofptextprocess
+from ofp_alarm import ofp_alarm
 
 
 async def session_initial():
@@ -114,7 +115,7 @@ async def getCFPL(session, db, url, fltNr, alnCd, fltDt, opSuffix, depCd, arvCd,
 
 
 def processofp(db, ofp, params):
-    global cfplexistCount, nocfplCount, insertCount, queryofpCount
+    global cfplexistCount, nocfplCount, insertCount, queryofpCount,alarm_count, aircraftList
     if ofp == {} or type(ofp) is not dict:
         logger.info(
             'get CFPL done, NO CFPL:fltNr=%s&alnCd=%s&fltDt=%s&opSuffix=%s&depCd=%s&arvCd=%s&tailNr=%s' % (
@@ -136,7 +137,21 @@ def processofp(db, ofp, params):
                 logger.warning('ofpprocess error!ofpNr=%s,fltNr=%s,depCd=%s,arvCd=%s' % (
                     ofp['opfNr'], ofp['fltNr'], ofp['depCd'], ofp['arvCd']), exc_info=True)
                 return -1
-            db.insertData({**ofp, **detail})
+            new_opf = {**ofp, **detail}
+            if new_opf['opSuffix'] == {}:
+                new_opf['opSuffix'] = None
+            #check aircraft list
+            if ofp['tailNr'] in aircraftList:
+                latest_ofp = db.fetch_latest_ofp(new_opf['fltDt'], new_opf['fltNr'],
+                                                 new_opf['opSuffix'], new_opf['depCd'],
+                                                 new_opf['arvCd'], new_opf['depDt'])
+
+                alarm_list = ofp_alarm(logger,latest_ofp,new_opf)
+                for x in alarm_list :
+                    db.insert_alarm(x)
+                alarm_count +=len(alarm_list)
+            #check aricraft list end
+            db.insertData(new_opf)
             insertCount += 1
         else:
             cfplexistCount += 1
@@ -197,6 +212,8 @@ dbuser = config['MYSQL']['user']
 dbpassword = config['MYSQL']['pass']
 dbname = config['MYSQL']['dbname']
 tablename = config['MYSQL']['tablename']
+alarm_table=config['MYSQL']['alarmtable']
+aircraft_table = config['MYSQL']['aircrafttable']
 # cfpl save path
 save_path = config['CFPL']['save_path']
 # sleep Interval per round
@@ -232,6 +249,8 @@ while True:
     nocfplCount = 0
     cfplexistCount = 0
     insertCount = 0
+    alarm_count = 0
+    aircraftList = []
     cfpltasks = []
     db = Database(dbhost,
                   dbport,
@@ -239,7 +258,10 @@ while True:
                   dbpassword,
                   dbname,
                   tablename,
+                  alarm_table,
+                  aircraft_table,
                   logger)
+    aircraftList = db.load_aircraft()
     for index, i in enumerate(flightinfo, start=0):
         # logger.info('processing : %s/%s' % (str(index + 1), flightlistCount))
         if i['depStsCd'] == 'AIR' or i['latestTailNr'] == {} or i['alnCd'] != 'CZ':
@@ -269,6 +291,7 @@ while True:
     logger.info("no CFPL count :%d" % nocfplCount)
     logger.info("CFPL existed count :%d" % cfplexistCount)
     logger.info("insert CFPL count :%d" % insertCount)
+    logger.info("Alarm count:%d" % alarm_count)
     for timer_count in range(interval + 1):
         print('\r',
               (repeat_to_length('-=', 60) + 'wait for next round : %ds' + repeat_to_length('-=', 60)) % (
